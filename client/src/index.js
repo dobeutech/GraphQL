@@ -1,6 +1,7 @@
 // conversation-network-viz.js - Interactive D3.js visualization for conversation clusters
 import * as d3 from 'd3';
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
+import './styles.css';
 
 class ConversationNetworkViz {
   constructor(containerId, graphqlEndpoint) {
@@ -673,8 +674,12 @@ class ConversationNetworkViz {
 
 // Initialize the visualization
 document.addEventListener('DOMContentLoaded', () => {
-  const viz = new ConversationNetworkViz('network-container', 'http://localhost:4000/graphql');
-  viz.loadData();
+  const graphqlUrl = window.__GRAPHQL_URI__ || '/graphql';
+  const viz = new ConversationNetworkViz('network-container', graphqlUrl);
+  viz.loadData().finally(() => {
+    const el = document.getElementById('loading');
+    if (el) el.remove();
+  });
   
   // Set up event listeners
   document.getElementById('viewMode')?.addEventListener('change', (e) => {

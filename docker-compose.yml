@@ -1,4 +1,3 @@
-# docker-compose.yml - Complete deployment stack for conversation network
 version: '3.8'
 
 services:
@@ -7,13 +6,13 @@ services:
     image: neo4j:5-enterprise
     container_name: neo4j-conversation
     ports:
-      - "7474:7474"  # HTTP
-      - "7687:7687"  # Bolt
+      - "7474:7474"
+      - "7687:7687"
     environment:
-      - NEO4J_AUTH=neo4j/your-password-here
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
       - NEO4J_dbms_memory_heap_initial__size=1G
-      - NEO4J_dbms_memory_heap_max__size=4G
-      - NEO4J_dbms_memory_pagecache_size=2G
+      - NEO4J_dbms_memory_heap_max__size=${NEO4J_HEAP_MAX:-4G}
+      - NEO4J_dbms_memory_pagecache_size=${NEO4J_PAGECACHE:-2G}
       - NEO4J_dbms_security_procedures_unrestricted=gds.*,apoc.*
       - NEO4J_dbms_security_procedures_whitelist=gds.*,apoc.*
       - NEO4JLABS_PLUGINS=["apoc", "graph-data-science"]
@@ -21,10 +20,15 @@ services:
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs
-      - neo4j_import:/var/lib/neo4j/import
       - neo4j_plugins:/plugins
     networks:
       - conversation-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   # Qdrant Vector Database
   qdrant:
@@ -41,8 +45,14 @@ services:
       - QDRANT__LOG_LEVEL=INFO
     networks:
       - conversation-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
-  # Redis for caching and session management
+  # Redis for caching
   redis:
     image: redis:7-alpine
     container_name: redis-conversation
@@ -53,6 +63,11 @@ services:
       - redis_data:/data
     networks:
       - conversation-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # Clustering Service (BERTopic + HDBSCAN)
   clustering-service:
@@ -67,12 +82,13 @@ services:
       - PORT=8081
       - MODEL_CACHE_DIR=/models
     volumes:
-      - ./clustering:/app
       - model_cache:/models
     networks:
       - conversation-network
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
 
   # GraphQL API Server
   graphql-server:
@@ -87,38 +103,34 @@ services:
       - PORT=4000
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=your-password-here
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
       - QDRANT_URL=http://qdrant:6333
       - REDIS_URL=redis://redis:6379
       - CLUSTERING_SERVICE_URL=http://clustering-service:8081
-    volumes:
-      - ./server:/app
-      - /app/node_modules
     networks:
       - conversation-network
     depends_on:
-      - neo4j
-      - qdrant
-      - redis
-      - clustering-service
+      neo4j:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      clustering-service:
+        condition: service_started
+    restart: unless-stopped
 
-  # Frontend Web Server
+  # Frontend Web Client
   web-client:
     build:
       context: ./client
       dockerfile: Dockerfile
     container_name: web-client
-    ports:
-      - "3000:80"
-    environment:
-      - REACT_APP_GRAPHQL_URI=http://localhost:4000/graphql
-    volumes:
-      - ./client:/app
-      - /app/node_modules
     networks:
       - conversation-network
     depends_on:
       - graphql-server
+    restart: unless-stopped
 
   # Nginx Reverse Proxy
   nginx:
@@ -135,6 +147,7 @@ services:
     depends_on:
       - web-client
       - graphql-server
+    restart: unless-stopped
 
   # Monitoring - Grafana
   grafana:
@@ -143,15 +156,16 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_INSTALL_PLUGINS=neo4j-datasource
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
       - ./grafana/datasources:/etc/grafana/provisioning/datasources
     networks:
       - conversation-network
+    profiles:
+      - monitoring
 
   # Monitoring - Prometheus
   prometheus:
@@ -165,10 +179,11 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
     networks:
       - conversation-network
+    profiles:
+      - monitoring
 
 networks:
   conversation-network:
@@ -177,7 +192,6 @@ networks:
 volumes:
   neo4j_data:
   neo4j_logs:
-  neo4j_import:
   neo4j_plugins:
   qdrant_storage:
   redis_data:

@@ -1,12 +1,14 @@
 // server.js - Main Apollo GraphQL Server with Neo4j and Qdrant integration
+import 'dotenv/config';
 import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
+import { expressMiddleware } from '@apollo/server/express4';
 import { Neo4jGraphQL } from '@neo4j/graphql';
 import neo4j from 'neo4j-driver';
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { Memory } from 'mem0';
-import { SentenceTransformer } from 'sentence-transformers';
 import DataLoader from 'dataloader';
+import express from 'express';
+import cors from 'cors';
+import { createServer } from 'http';
 
 // Initialize connections
 const driver = neo4j.driver(
@@ -18,18 +20,9 @@ const qdrantClient = new QdrantClient({
   url: process.env.QDRANT_URL || 'http://localhost:6333',
 });
 
-const memory = new Memory({
-  config: {
-    version: 'v1.0',
-    vector_store: {
-      provider: 'qdrant',
-      config: {
-        url: process.env.QDRANT_URL || 'http://localhost:6333',
-        collection_name: 'conversation_memory'
-      }
-    }
-  }
-});
+// Mem0 memory layer — disabled until a JS-compatible client is available.
+// The Python Mem0 SDK can be accessed via the clustering service if needed.
+const memory = null;
 
 // GraphQL Type Definitions
 const typeDefs = `#graphql
@@ -803,46 +796,58 @@ async function getTopClusters(session, limit = 5) {
 // Initialize Neo4j GraphQL
 const neoSchema = new Neo4jGraphQL({ typeDefs, driver, resolvers });
 
-// Create Apollo Server
+// Create Apollo Server with Express for health endpoint
 async function startServer() {
   const schema = await neoSchema.getSchema();
-  
+  const app = express();
+  const httpServer = createServer(app);
+
   const server = new ApolloServer({
     schema,
-    context: async ({ req }) => {
-      return {
-        dataSources: {
-          neo4j: driver,
-          qdrant: qdrantClient,
-          mem0: memory
-        },
-        loaders: createDataLoaders(driver.session())
-      };
-    },
-    plugins: [
-      {
-        async requestDidStart() {
-          return {
-            async willSendResponse(requestContext) {
-              // Add performance monitoring
-              console.log('Query execution time:', 
-                requestContext.response.http.body.extensions?.executionTime);
-            }
-          };
-        }
-      }
-    ]
   });
-  
-  const { url } = await startStandaloneServer(server, {
-    listen: { port: 4000 },
+
+  await server.start();
+
+  app.use(cors());
+  app.use(express.json());
+
+  // Health check endpoint
+  app.get('/health', async (_req, res) => {
+    const checks = { neo4j: false, qdrant: false, clustering: false };
+    try {
+      const session = driver.session();
+      await session.run('RETURN 1');
+      await session.close();
+      checks.neo4j = true;
+    } catch { /* neo4j down */ }
+    try {
+      await qdrantClient.getCollections();
+      checks.qdrant = true;
+    } catch { /* qdrant down */ }
+    try {
+      const r = await fetch(`${process.env.CLUSTERING_SERVICE_URL || 'http://localhost:8081'}/health`);
+      checks.clustering = r.ok;
+    } catch { /* clustering down */ }
+
+    const healthy = checks.neo4j && checks.qdrant;
+    res.status(healthy ? 200 : 503).json({ status: healthy ? 'healthy' : 'degraded', checks });
   });
-  
-  console.log(`🚀 GraphQL Server ready at: ${url}`);
+
+  // GraphQL middleware
+  app.use('/graphql', expressMiddleware(server, {
+    context: async ({ req }) => ({
+      dataSources: { neo4j: driver, qdrant: qdrantClient },
+      loaders: createDataLoaders(driver.session()),
+    }),
+  }));
+
+  const port = parseInt(process.env.PORT || '4000', 10);
+  httpServer.listen(port, () => {
+    console.log(`GraphQL Server ready at http://localhost:${port}/graphql`);
+    console.log(`Health check at http://localhost:${port}/health`);
+  });
 }
 
-// Start the server
 startServer().catch(console.error);
 
-// Export for testing
-export { typeDefs, resolvers, driver, qdrantClient, memory };
+export { typeDefs, resolvers, driver, qdrantClient };
