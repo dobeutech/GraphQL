@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   # Neo4j Graph Database
   neo4j:
-    image: neo4j:5-enterprise
+    image: neo4j:5
     container_name: neo4j-conversation
     ports:
       - "7474:7474"
@@ -15,8 +13,7 @@ services:
       - NEO4J_dbms_memory_pagecache_size=${NEO4J_PAGECACHE:-2G}
       - NEO4J_dbms_security_procedures_unrestricted=gds.*,apoc.*
       - NEO4J_dbms_security_procedures_whitelist=gds.*,apoc.*
-      - NEO4JLABS_PLUGINS=["apoc", "graph-data-science"]
-      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4JLABS_PLUGINS=["apoc"]
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs
