@@ -26,14 +26,7 @@ const memory = null;
 
 // GraphQL Type Definitions
 const typeDefs = `#graphql
-  interface Node {
-    id: ID!
-    createdAt: DateTime!
-    updatedAt: DateTime!
-    embedding: [Float!]
-  }
-
-  type TopicCluster implements Node {
+  type TopicCluster {
     id: ID!
     name: String!
     description: String
@@ -51,26 +44,18 @@ const typeDefs = `#graphql
     sources: [SourceNode!]! @relationship(type: "REFERENCES_SOURCE", direction: OUT)
     
     # Cluster relationships with weights
-    relatedClusters: [ClusterRelationship!]! @relationship(type: "RELATED_TO", direction: BOTH, properties: "RelationshipProperties")
+    relatedClusters: [TopicCluster!]! @relationship(type: "RELATED_TO", direction: OUT, properties: "ClusterRelationship")
     parentCluster: TopicCluster @relationship(type: "SUBCATEGORY_OF", direction: OUT)
     subClusters: [TopicCluster!]! @relationship(type: "SUBCATEGORY_OF", direction: IN)
     
     # Computed fields
     messageCount: Int! @cypher(statement: """
       MATCH (this)-[:CONTAINS_QUERY|CONTAINS_RESPONSE]->(n)
-      RETURN count(n)
-    """)
-    
-    temporalRange: TimeRange @cypher(statement: """
-      MATCH (this)-[:CONTAINS_QUERY|CONTAINS_RESPONSE]->(n)
-      RETURN { 
-        start: min(n.timestamp), 
-        end: max(n.timestamp) 
-      } as range
-    """)
+      RETURN count(n) AS count
+    """, columnName: "count")
   }
 
-  type QueryNode implements Node {
+  type QueryNode {
     id: ID!
     content: String!
     timestamp: DateTime!
@@ -92,7 +77,7 @@ const typeDefs = `#graphql
     similarQueries(threshold: Float = 0.7): [SimilarQuery!]!
   }
 
-  type ResponseNode implements Node {
+  type ResponseNode {
     id: ID!
     content: String!
     timestamp: DateTime!
@@ -114,7 +99,7 @@ const typeDefs = `#graphql
     relevanceScore: Float
   }
 
-  type ArtifactNode implements Node {
+  type ArtifactNode {
     id: ID!
     artifactType: ArtifactType!
     content: String!
@@ -129,7 +114,7 @@ const typeDefs = `#graphql
     # Relationships
     generatedBy: ResponseNode! @relationship(type: "GENERATED", direction: IN)
     derivedFrom: [ArtifactNode!]! @relationship(type: "DERIVED_FROM", direction: OUT)
-    versions: [ArtifactNode!]! @relationship(type: "VERSION_OF", direction: BOTH)
+    versions: [ArtifactNode!]! @relationship(type: "VERSION_OF", direction: OUT)
     cluster: TopicCluster! @relationship(type: "CONTAINS_ARTIFACT", direction: IN)
     
     # Metadata
@@ -137,7 +122,7 @@ const typeDefs = `#graphql
     lastUsed: DateTime
   }
 
-  type SourceNode implements Node {
+  type SourceNode {
     id: ID!
     url: String!
     title: String!
@@ -335,7 +320,7 @@ const typeDefs = `#graphql
   }
 
   type Path {
-    nodes: [Node!]!
+    nodes: [ID!]!
     edges: [Edge!]!
     totalWeight: Float!
   }
@@ -413,7 +398,6 @@ const typeDefs = `#graphql
   }
 
   scalar JSON
-  scalar DateTime
 `;
 
 // Create DataLoaders for batching
