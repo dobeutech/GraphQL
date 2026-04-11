@@ -24,7 +24,7 @@ model_cache/
 logs/
 
 # IDE
-.vscode/
+# .vscode/ is tracked — it contains shared workspace settings and extension recommendations
 .idea/
 *.swp
 *.swo

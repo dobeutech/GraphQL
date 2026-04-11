@@ -1,0 +1,52 @@
+[core]
+	autocrlf = input
+	editor = code --wait
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = true
+
+[rebase]
+	autoStash = true
+
+[merge]
+	tool = vscode
+
+[mergetool "vscode"]
+	cmd = code --wait $MERGED
+
+[diff]
+	tool = vscode
+
+[difftool "vscode"]
+	cmd = code --wait --diff $LOCAL $REMOTE
+
+[alias]
+	# Pretty log
+	lg = log --oneline --graph --decorate --all
+	# Short status
+	st = status -sb
+	# Checkout
+	co = checkout
+	# Branch list sorted by last commit
+	br = branch --sort=-committerdate
+	# Undo last commit, keep changes staged
+	undo = reset --soft HEAD~1
+	# Stash with a message
+	save = stash push -m
+	# List stashes
+	stashes = stash list
+	# Show files changed in last commit
+	changed = diff --name-only HEAD~1 HEAD
+	# Amend without editing message
+	amend = commit --amend --no-edit
+	# Delete merged local branches
+	cleanup = "!git branch --merged | grep -v '\\*\\|main\\|master\\|develop' | xargs -r git branch -d"
+
+[color]
+	ui = auto
+
+[push]
+	autoSetupRemote = true

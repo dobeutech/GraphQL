@@ -1,0 +1,37 @@
+{
+  "recommendations": [
+    // JavaScript / Node.js
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+
+    // Python
+    "charliermarsh.ruff",
+    "ms-python.python",
+    "ms-python.debugpy",
+
+    // GraphQL
+    "graphql.vscode-graphql",
+    "graphql.vscode-graphql-syntax",
+
+    // Docker / containers
+    "ms-azuretools.vscode-docker",
+    "ms-vscode-remote.remote-containers",
+
+    // Database
+    "neo4j-extensions.neo4j-for-vscode",
+
+    // Config / markup
+    "redhat.vscode-yaml",
+    "mikestead.dotenv",
+    "nginx.nginx-conf",
+
+    // Git
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+
+    // Productivity
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+    "christian-kohler.path-intellisense"
+  ]
+}
