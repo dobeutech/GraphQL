@@ -20,7 +20,7 @@
 	// },
 
 	// Source shell aliases and git config after the container is created
-	"postCreateCommand": "cat .devcontainer/dotfiles/.bashrc_extras >> ~/.bashrc && cp .devcontainer/dotfiles/.gitconfig ~/.gitconfig && echo 'Dotfiles applied.'",
+	"postCreateCommand": "grep -q 'bashrc_extras' ~/.bashrc || echo 'source ${containerWorkspaceFolder}/.devcontainer/dotfiles/.bashrc_extras' >> ~/.bashrc && git config --global include.path ${containerWorkspaceFolder}/.devcontainer/dotfiles/.gitconfig && echo 'Dotfiles applied.'",
 
 	"customizations": {
 		"vscode": {
