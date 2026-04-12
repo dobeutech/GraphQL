@@ -1,0 +1,64 @@
+// The Dev Container format allows you to configure your environment. At the heart of it
+// is a Docker image or Dockerfile which controls the tools available in your environment.
+//
+// See https://aka.ms/devcontainer.json for more information.
+{
+	"name": "Ona",
+	// Use "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+	// instead of the build to use a pre-built image.
+	"build": {
+		"context": ".",
+		"dockerfile": "Dockerfile"
+	},
+
+	// Features add additional features to your environment. See https://containers.dev/features
+	// Beware: features are not supported on all platforms and may have unintended side-effects.
+	// "features": {
+	//   "ghcr.io/devcontainers/features/docker-in-docker": {
+	//     "moby": false
+	//   }
+	// },
+
+	// Source shell aliases and git config after the container is created
+	"postCreateCommand": "grep -q 'bashrc_extras' ~/.bashrc || echo 'source ${containerWorkspaceFolder}/.devcontainer/dotfiles/.bashrc_extras' >> ~/.bashrc && git config --global include.path ${containerWorkspaceFolder}/.devcontainer/dotfiles/.gitconfig && echo 'Dotfiles applied.'",
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				// JavaScript / Node.js
+				"esbenp.prettier-vscode",
+				"dbaeumer.vscode-eslint",
+
+				// Python
+				"charliermarsh.ruff",
+				"ms-python.python",
+				"ms-python.debugpy",
+
+				// GraphQL
+				"graphql.vscode-graphql",
+				"graphql.vscode-graphql-syntax",
+
+				// Docker / containers
+				"ms-azuretools.vscode-docker",
+				"ms-vscode-remote.remote-containers",
+
+				// Database
+				"neo4j-extensions.neo4j-for-vscode",
+
+				// Config / markup
+				"redhat.vscode-yaml",
+				"mikestead.dotenv",
+				"nginx.nginx-conf",
+
+				// Git
+				"eamodio.gitlens",
+				"mhutchie.git-graph",
+
+				// Productivity
+				"streetsidesoftware.code-spell-checker",
+				"usernamehw.errorlens",
+				"christian-kohler.path-intellisense"
+			]
+		}
+	}
+}

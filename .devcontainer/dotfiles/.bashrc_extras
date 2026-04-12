@@ -1,0 +1,77 @@
+# GraphQL Conversation Network — shell extras
+# Sourced by postCreateCommand. Safe to source multiple times.
+
+# ── Docker Compose ────────────────────────────────────────────────────────────
+alias dcu='docker compose up -d'
+alias dcd='docker compose down'
+alias dcr='docker compose restart'
+alias dcp='docker compose ps'
+alias dcb='docker compose build'
+
+# Tail logs for individual services
+alias logs-neo4j='docker compose logs -f neo4j'
+alias logs-qdrant='docker compose logs -f qdrant'
+alias logs-redis='docker compose logs -f redis'
+alias logs-server='docker compose logs -f graphql-server'
+alias logs-clustering='docker compose logs -f clustering-service'
+alias logs-nginx='docker compose logs -f nginx'
+
+# ── Node / Server ─────────────────────────────────────────────────────────────
+alias nrd='npm run dev'
+alias nri='npm install'
+alias nrb='npm run build'
+alias nrt='npm test'
+
+# Start the GraphQL server locally
+alias server-dev='cd "$(git rev-parse --show-toplevel)/server" && npm run dev'
+
+# Start the client dev server locally
+alias client-dev='cd "$(git rev-parse --show-toplevel)/client" && npm start'
+
+# ── Python / Clustering ───────────────────────────────────────────────────────
+alias pys='source .venv/bin/activate 2>/dev/null || source venv/bin/activate 2>/dev/null || echo "No venv found"'
+alias clustering-dev='cd "$(git rev-parse --show-toplevel)/clustering" && python clustering_service.py'
+
+# ── Health checks ─────────────────────────────────────────────────────────────
+alias health-graphql='curl -s http://localhost:4000/health | python3 -m json.tool'
+alias health-clustering='curl -s http://localhost:8081/health | python3 -m json.tool'
+alias health-qdrant='curl -s http://localhost:6333/healthz'
+alias health-neo4j='curl -s http://localhost:7474 | head -5'
+
+# Check all services at once
+health-all() {
+  echo "=== GraphQL Server ===" && health-graphql
+  echo "=== Clustering Service ===" && health-clustering
+  echo "=== Qdrant ===" && health-qdrant
+}
+
+# ── Git ───────────────────────────────────────────────────────────────────────
+alias gs='git status'
+alias gd='git diff'
+alias gds='git diff --staged'
+alias gco='git checkout'
+alias gcm='git commit -m'
+alias gca='git commit --amend --no-edit'
+alias gb='git branch'
+alias gpl='git pull --rebase'
+alias gps='git push'
+alias gl='git log --oneline --graph --decorate -20'
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+# Pretty-print JSON from clipboard or pipe
+alias jpp='python3 -m json.tool'
+
+# Show which ports are in use by project services
+ports-check() {
+  for port in 80 443 3000 4000 6333 6334 6379 7474 7687 8081 9090 3001; do
+    result=$(lsof -ti tcp:"$port" 2>/dev/null)
+    if [ -n "$result" ]; then
+      echo "  :$port → PID $result"
+    else
+      echo "  :$port → free"
+    fi
+  done
+}
+
+# Jump to project root from anywhere inside the repo
+alias root='cd "$(git rev-parse --show-toplevel)"'

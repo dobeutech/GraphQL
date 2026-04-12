@@ -1,0 +1,78 @@
+{
+  // Editor baseline
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.rulers": [100],
+  "editor.trimAutoWhitespace": true,
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+
+  // JavaScript / TypeScript
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+
+  // Python
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.tabSize": 4
+  },
+  "python.defaultInterpreterPath": "/usr/bin/python3",
+  "ruff.organizeImports": true,
+  "ruff.fixAll": true,
+
+  // ESLint
+  "eslint.workingDirectories": ["server", "client"],
+  "eslint.validate": ["javascript"],
+
+  // GraphQL
+  "graphql-config.load.rootDir": ".",
+  "graphql-config.load.filePath": ".graphqlrc.yml",
+
+  // Docker
+  "docker.defaultRegistryPath": "",
+  "docker.showStartPage": false,
+
+  // Neo4j
+  "neo4j.connectURL": "bolt://localhost:7687",
+  "neo4j.username": "neo4j",
+
+  // File associations
+  "files.associations": {
+    "*.graphql": "graphql",
+    "docker-compose*.yml": "dockercompose",
+    ".env.example": "dotenv",
+    "nginx.conf": "nginx"
+  },
+
+  // Search exclusions
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/__pycache__": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/*.egg-info": true,
+    "**/neo4j_data": true,
+    "**/qdrant_storage": true,
+    "**/model_cache": true
+  },
+
+  // Explorer
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.js": "${capture}.test.js, ${capture}.spec.js",
+    "package.json": "package-lock.json, .eslintrc*, .prettierrc*",
+    "docker-compose.yml": "docker-compose.*.yml"
+  }
+}
