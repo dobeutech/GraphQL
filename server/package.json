@@ -10,7 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@apollo/server": "^4.9.5",
+    "@apollo/server": "^5.5.0",
     "@neo4j/graphql": "^5.3.1",
     "@qdrant/js-client-rest": "^1.7.0",
     "dataloader": "^2.2.2",
